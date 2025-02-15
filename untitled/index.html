@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Page</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <style>
+        body {
+            overflow-x: hidden;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 250px;
+            background-color: #343a40;
+            color: white;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        .main-content {
+            margin-left: 250px;
+            width: calc(100% - 250px);
+        }
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+        }
+    </style>
+</head>
+<body>
+<div class="d-flex">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h4 class="text-center">Menu</h4>
+        <ul class="nav flex-column">
+            <li class="nav-item my-2">
+                <button class="btn btn-light w-100" onclick="loadCategories()">Categories</button>
+            </li>
+            <li class="nav-item my-2">
+                <button class="btn btn-light w-100" onclick="loadProducts()">Products</button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
+            <div class="container-fluid">
+                <h3 class="text-light">Admin Page</h3>
+                <a href="userpage.html" class="btn btn-light">User Page</a>
+            </div>
+        </nav>
+        <div class="container">
+            <div id="main-table-section">
+                <!-- Dynamic content (categories or products) will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const mainTableSection = document.getElementById("main-table-section");
+    const categoryBtn = document.querySelector('[onclick="loadCategories()"]');
+    const productBtn = document.querySelector('[onclick="loadProducts()"]');
+
+    function setActiveButton(button) {
+        categoryBtn.classList.remove("active", "btn-primary");
+        productBtn.classList.remove("active", "btn-primary");
+
+        categoryBtn.classList.add("btn-light");
+        productBtn.classList.add("btn-light");
+
+        button.classList.remove("btn-light");
+        button.classList.add("active", "btn-primary");
+    }
+
+    function loadCategories() {
+        axios.get("http://localhost:8080/category").then(res => {
+            let content = `
+                <div class="d-flex justify-content-between mb-3">
+                    <h4>Categories</h4>
+                    <a class="btn btn-success" href="addcategory.html">Add Category</a>
+                </div>
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            res.data.forEach(category => {
+                content += `
+                    <tr>
+                        <td>${category.id}</td>
+                        <td>${category.name}</td>
+                        <td>
+                            <a class="btn btn-sm btn-dark" href="addcategory.html?categoryId=${category.id}">Update</a>
+                            <button class="btn btn-sm btn-danger" onclick="deleteCategory(${category.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            content += `</tbody></table>`;
+            mainTableSection.innerHTML = content;
+
+            // **Tanlangan tugmani belgilash**
+            setActiveButton(categoryBtn);
+        });
+    }
+
+    function loadProducts() {
+        axios.get("http://localhost:8080/product").then(res => {
+            let content = `
+                <div class="d-flex justify-content-between mb-3">
+                    <h4>Products</h4>
+                    <a class="btn btn-success" href="add.html">Add Product</a>
+                </div>
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Image</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            res.data.forEach(product => {
+                content += `
+                    <tr>
+                        <td>${product.id}</td>
+                        <td><img src="http://localhost:8080/file/${product.attachment.id}" alt="Product Image" style="height: 50px; width: 50px; object-fit: cover;"></td>
+                        <td>${product.name}</td>
+                        <td>${product.category.name}</td>
+                        <td>$${product.price}</td>
+                        <td>
+                            <a class="btn btn-sm btn-dark" href="add.html?productId=${product.id}">Update</a>
+                            <button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            content += `</tbody></table>`;
+            mainTableSection.innerHTML = content;
+
+            // **Tanlangan tugmani belgilash**
+            setActiveButton(productBtn);
+        });
+    }
+
+    function deleteCategory(id) {
+        if (confirm("Are you sure you want to delete this category?")) {
+            axios.delete(`http://localhost:8080/category/${id}`).then(() => loadCategories());
+        }
+    }
+
+    function deleteProduct(id) {
+        if (confirm("Are you sure you want to delete this product?")) {
+            axios.delete(`http://localhost:8080/product/${id}`).then(() => loadProducts());
+        }
+    }
+
+    // **Sahifa yuklanganda mahsulotlar yuklansin**
+    document.addEventListener("DOMContentLoaded", () => {
+        loadProducts();
+    });
+</script>
+
+</body>
+</html>

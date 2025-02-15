@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add product</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+</head>
+<body>
+<div class="row">
+    <div class="col-4 offset-4">
+        <div class="card">
+            <div id="heading" class="card-header bg-dark text-white">
+                Add product
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <label>
+                        <img id="img" src="images/default.jpg" width="100" height="100" style="border-radius: 10px">
+                        <input style="display: none" onchange="uploadFile(event)" type="file">
+                    </label>
+                </div>
+                <form onsubmit="saveProduct(event)">
+                    <div class="mb-2">
+                        <input placeholder="Name" type="text" class="form-control">
+                    </div>
+                    <div class="mb-2">
+                        <input placeholder="Price" type="number" class="form-control">
+                    </div>
+                    <div class="mb-2">
+                        <select id="selectId" class="form-select">
+
+                        </select>
+                    </div>
+                    <div class="text-end">
+                        <button class="btn btn-dark">save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    let params = new URLSearchParams(new URL(window.location.href).search)
+    let currentProductId = params.get("productId")
+    let photoId = ""
+    let image = document.getElementById("img")
+    let select = document.getElementById("selectId")
+    let heading = document.getElementById("heading")
+
+    if (currentProductId) {
+        heading.innerText = "Update product"
+        axios({
+            url: "http://localhost:8080/product/" + currentProductId,
+            method: "GET"
+        }).then(res => {
+            let product = res.data
+            let form = document.forms[0]
+            form[0].value = product.name
+            form[1].value = product.price
+            form[2].value = product.category.id
+            photoId = product.attachment.id
+            img.src = "http://localhost:8080/file/" + product.attachment.id
+        })
+    }
+
+    getCategories()
+
+    function getCategories() {
+        axios({
+            url: `http://localhost:8080/category`,
+            method: `GET`
+        }).then(res => {
+            let s = "";
+            s += `<option selected disabled>Select Category</option>`
+            for (let item of res.data) {
+                s += `<option value="${item.id}">${item.name}</option>`
+            }
+            select.innerHTML = s
+        })
+    }
+
+    function uploadFile(event) {
+        let file = event.target.files[0]
+        let formData = new FormData()
+        formData.append("file", file)
+        axios.post(`http://localhost:8080/file`, formData, {
+            headers: {
+                "Content-type": "multipart/form-Data",
+            },
+        }).then(res => {
+            img.src = "http://localhost:8080/file/" + res.data
+            photoId = res.data
+        })
+    }
+
+    function saveProduct(event) {
+        event.preventDefault()
+        if (photoId) {
+            axios({
+                url: currentProductId ? "http://localhost:8080/product/"+ currentProductId : "http://localhost:8080/product",
+                method: currentProductId ? `PUT` : `POST`,
+                data: {
+                    productName: event.target[0].value,
+                    productPrice: event.target[1].value,
+                    categoryId: event.target[2].value,
+                    attachmentId: photoId
+                 }
+            }).then(res => {
+                let a = document.createElement("a")
+                a.href = "index.html"
+                a.click()
+            })
+
+        } else {
+            alert(`you must upload a photo`)
+        }
+    }
+</script>
+</body>
+</html>

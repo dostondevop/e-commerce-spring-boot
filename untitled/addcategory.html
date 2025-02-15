@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add category</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+</head>
+<body>
+<div class="row">
+    <div class="col-4 offset-4">
+        <div class="card">
+            <div id="heading" class="card-header bg-dark text-white">
+                Add category
+            </div>
+            <div class="card-body">
+                <form onsubmit="saveCategory(event)">
+                    <div class="mb-2">
+                        <input placeholder="Name" name="categoryName" type="text" class="form-control">
+                    </div>
+                    <div class="text-end">
+                        <button class="btn btn-dark">save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+
+    let params = new URLSearchParams(new URL(window.location.href).search)
+    let currentCategoryId = params.get("categoryId")
+    let select = document.getElementById("selectId")
+    let heading = document.getElementById("heading")
+
+    if (currentCategoryId) {
+        heading.innerText = "Update product"
+        axios({
+            url: "http://localhost:8080/category/" + currentCategoryId,
+            method: "GET"
+        }).then(res => {
+            let category = res.data
+            let form = document.forms[0]
+            form[0].value = category.name
+        })
+    }
+
+    function saveCategory(event) {
+        event.preventDefault()
+            axios({
+                url: currentCategoryId ? "http://localhost:8080/category/"+ currentCategoryId : "http://localhost:8080/category",
+                method: currentCategoryId ? `PUT` : `POST`,
+                data: {
+                    categoryName: event.target[0].value,
+                }
+            }).then(res => {
+                let a = document.createElement("a")
+                a.href = "index.html"
+                a.click()
+            })
+
+    }
+
+</script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <style>
+        .cart-table img {
+            height: 50px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <h3>Your Cart</h3>
+    <table class="table cart-table">
+        <thead>
+        <tr>
+            <th>Image</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Amount</th>
+            <th>Total</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody id="cartTableBody">
+        <!-- Cart products will be loaded here -->
+        </tbody>
+        <tfoot>
+        <tr>
+            <td colspan="5" class="text-end"><strong>Total Price:</strong></td>
+            <td id="totalPrice"><strong>$0</strong></td>
+            <td></td>
+        </tr>
+        </tfoot>
+    </table>
+    <a href="userpage.html" class="btn btn-primary">Back to Shop</a>
+    <button class="btn btn-dark" onclick="saveOrder()">Order</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    function loadCart() {
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        let cartTableBody = document.getElementById('cartTableBody');
+        let totalPriceElement = document.getElementById('totalPrice');
+        cartTableBody.innerHTML = ''; // Clear the table before adding items
+        let total = 0;
+
+        if (cart.length === 0) {
+            cartTableBody.innerHTML = '<tr><td colspan="7" class="text-center">Your cart is empty.</td></tr>';
+            totalPriceElement.innerHTML = '<strong>$0</strong>';
+        } else {
+            cart.forEach(product => {
+                let productTotal = product.price * product.amount;
+                total += productTotal;
+                cartTableBody.innerHTML += `
+                <tr>
+                    <td><img src="http://localhost:8080/file/${product.imageId}" alt="${product.name}"></td>
+                    <td>${product.name}</td>
+                    <td>${product.category}</td>
+                    <td>${product.price}$</td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="updateQuantity(${product.id}, -1)">-</button>
+                        ${product.amount}
+                        <button class="btn btn-secondary" onclick="updateQuantity(${product.id}, 1)">+</button>
+                    </td>
+                    <td><strong>${productTotal}$</strong></td>
+                    <td><button class="btn btn-danger" onclick="removeFromCart(${product.id})">Delete</button></td>
+                </tr>
+            `;
+            });
+            totalPriceElement.innerHTML = `<strong>$${total.toFixed(2)}</strong>`;
+        }
+    }
+
+    function updateQuantity(productId, change) {
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        let product = cart.find(item => item.id === productId);
+
+        if (product) {
+            product.amount += change;
+            if (product.amount <= 0) {
+                product.amount = 1;
+            }
+            localStorage.setItem('cart', JSON.stringify(cart));
+            loadCart();
+        }
+    }
+
+    function removeFromCart(productId) {
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        cart = cart.filter(item => item.id !== productId);
+        localStorage.setItem('cart', JSON.stringify(cart));
+        loadCart();
+    }
+
+    function saveOrder(){
+        const cart = JSON.parse(localStorage.getItem("cart"));
+        axios.post("http://localhost:8080/order", cart, {
+            headers: { "Content-Type": "application/json" }
+        }).then(response => {
+            console.log("Backend javobi:", response.data);
+        }).catch(error => {
+            console.error("Xatolik:", error);
+        });
+        localStorage.removeItem("cart");
+        location.reload();
+    }
+
+    window.onload = loadCart;
+</script>
+</body>
+</html>

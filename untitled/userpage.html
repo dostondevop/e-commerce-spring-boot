@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Page</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <style>
+        body {
+            overflow-x: hidden;
+        }
+
+        .sticky-sidebar {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+
+        .sticky-navbar {
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+        }
+    </style>
+</head>
+<body>
+<div class="d-flex">
+    <div class="bg-dark text-white p-3 sticky-sidebar" style="width: 250px;">
+        <h4 class="text-center">Menu</h4>
+        <ul class="nav flex-column" id="categoryList">
+            <li class="nav-item my-2">
+                <button class="btn btn-light w-100 active" id="allProductsBtn" onclick="loadAllProducts()">All Products</button>
+            </li>
+        </ul>
+    </div>
+
+    <div class="flex-grow-1">
+        <nav class="navbar navbar-expand-lg navbar-light bg-dark shadow-sm mb-3 sticky-navbar">
+            <div class="container-fluid">
+                <h3 class="text-light">User Page</h3>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto d-flex align-items-center">
+                        <li class="nav-item me-3">
+                            <a href="cart.html" class="btn btn-outline-light position-relative" id="cartButton">
+                                Cart
+                                <span class="badge bg-danger position-absolute top-0 start-100 translate-middle" id="cartCount">0</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-outline-light me-3" href="orderReport.html">My Orders</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-outline-light" href="index.html">Admin Page</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container">
+            <div class="row" id="product-container"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    let productContainer = document.getElementById("product-container");
+    let categoryList = document.getElementById("categoryList");
+
+    function loadProducts(url) {
+        axios.get(url).then(res => {
+            let content = "";
+            if (res.data.length === 0) {
+                content = `<div class="col-12 text-center"><h4 class="text-danger">No products available in this category</h4></div>`;
+            } else {
+                res.data.forEach(item => {
+                    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+                    let productInCart = cart.find(cartItem => cartItem.id === item.id);
+                    let buttonText = productInCart ? `Remove from Cart` : `Add to Cart`;
+
+                    content += `
+                    <div class="col-md-2 mb-4">
+                        <div class="card shadow-sm">
+                            <img src="http://localhost:8080/file/${item.attachment.id}" class="card-img-top" alt="Product Image" style="height: 150px; object-fit: cover;">
+                            <div class="card-body">
+                                <h6 class="card-title text-dark">${item.name}</h6>
+                                <p class="card-text text-muted">Category: ${item.category.name}</p>
+                                <p class="card-text fw-bold">Price: $${item.price}</p>
+                                <button class="btn btn-dark w-100" id="addToCartBtn-${item.id}" onclick="toggleCart(${item.id}, '${item.name}', '${item.category.name}', ${item.price}, '${item.attachment.id}')">${buttonText}</button>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+            }
+            productContainer.innerHTML = content;
+        });
+    }
+
+    function toggleCart(productId, productName, categoryName, price, imageId) {
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        let productIndex = cart.findIndex(item => item.id === productId);
+
+        if (productIndex !== -1) {
+            // Agar mahsulot allaqachon savatchada bo'lsa, uni olib tashlaymiz
+            cart.splice(productIndex, 1);
+        } else {
+            // Agar mahsulot savatchada yo'q bo'lsa, yangi mahsulotni qo'shamiz
+            cart.push({
+                id: productId,
+                name: productName,
+                category: categoryName,
+                price: price,
+                imageId: imageId,
+                amount: 1 // amountni 1 deb belgilaymiz
+            });
+        }
+
+        localStorage.setItem('cart', JSON.stringify(cart));
+        updateCartCount();
+        updateButtonState(productId);
+    }
+
+
+    function updateButtonState(productId) {
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        let productInCart = cart.find(item => item.id === productId);
+        let button = document.getElementById(`addToCartBtn-${productId}`);
+        if (button) {
+            button.innerText = productInCart ? `Remove from Cart` : `Add to Cart`;
+        }
+    }
+
+    function updateCartCount() {
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        document.getElementById('cartCount').innerText = cart.length;
+    }
+
+    window.onload = function () {
+        updateCartCount();
+    }
+
+    function loadAllProducts() {
+        loadProducts(`http://localhost:8080/product`);
+    }
+
+    axios.get(`http://localhost:8080/category`).then(res => {
+        let categoryContent = "<h5>Categories</h5>";
+        res.data.forEach(category => {
+            categoryContent += `
+                <button class="btn btn-outline-light w-100 my-2" onclick="loadProducts('http://localhost:8080/product/category/${category.id}')">
+                    ${category.name}
+                </button>`;
+        });
+        categoryList.innerHTML += categoryContent;
+    });
+
+    loadAllProducts();
+</script>
+</body>
+</html>
